@@ -9,8 +9,8 @@ Explore, interact, and control your own 3D universe. Built using Three.js and Ja
 - Particle system for realistic spatial effects
 - Responsive, smooth camera control
 
-##Getting Started
+## Getting Started
 Simply clone the repo and open `index.html` in your browser.
 
-##Live Demo
+## Live Demo
 [Your GitHub Pages Link or Netlify]
