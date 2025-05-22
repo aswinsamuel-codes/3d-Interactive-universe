@@ -13,4 +13,4 @@ Explore, interact, and control your own 3D universe. Built using Three.js and Ja
 Simply clone the repo and open `index.html` in your browser.
 
 ## Live Demo
-[Your GitHub Pages Link or Netlify]
+https://aswinsamuel-codes.github.io/3d-Interactive-universe/
