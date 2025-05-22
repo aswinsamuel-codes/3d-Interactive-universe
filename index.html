@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced 3D Interactive Universe</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+        }
+        .content {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h1 {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+            transition: transform 0.5s, color 0.5s;
+        }
+        h1:hover {
+            transform: scale(1.1);
+            color: #ffcc00;
+        }
+        p {
+            font-size: 1.2rem;
+            max-width: 600px;
+            margin: 0 auto 20px;
+            text-shadow: 0 0 5px rgba(0,0,0,0.5);
+        }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 10px;
+            max-width: 800px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        button {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 5px;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+            backdrop-filter: blur(5px);
+        }
+        button:hover {
+            background: rgba(255,255,255,0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .scene-selector {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .audio-controls {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .audio-button {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0,0,0,0.8);
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 400px;
+            z-index: 100;
+            text-align: center;
+        }
+        .modal h2 {
+            margin-top: 0;
+        }
+        .modal-close {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            cursor: pointer;
+        }
+        .loader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111133;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            flex-direction: column;
+        }
+        .loader-bar {
+            width: 200px;
+            height: 10px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 5px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+        .loader-progress {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ff4444, #ffcc00);
+            transition: width 0.3s;
+        }
+    </style>
+</head>
+<body>
+    <div class="loader">
+        <h2>Loading Experience</h2>
+        <div class="loader-bar">
+            <div class="loader-progress" id="loader-progress"></div>
+        </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+    
+    <div class="content">
+        <h1>3D Interactive Universe</h1>
+        <p>Move your mouse to navigate. Click on objects to interact.</p>
+        
+        <div class="controls">
+            <button id="addCube">Add Cube</button>
+            <button id="addSphere">Add Sphere</button>
+            <button id="addTorus">Add Torus</button>
+            <button id="toggleRotation">Toggle Rotation</button>
+            <button id="changeColors">Change Colors</button>
+            <button id="explodeEffect">Explosion Effect</button>
+            <button id="toggleParticles">Toggle Particles</button>
+        </div>
+        
+        <div class="scene-selector">
+            <p>Select Scene:</p>
+            <div class="controls">
+                <button id="scene-cosmos">Cosmic Scene</button>
+                <button id="scene-ocean">Ocean Depths</button>
+                <button id="scene-neon">Neon City</button>
+                <button id="scene-minimal">Minimal Space</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="audio-controls">
+        <button class="audio-button" id="toggle-music">♪</button>
+        <button class="audio-button" id="toggle-sound">🔊</button>
+    </div>
+    
+    <div class="modal" id="info-modal">
+        <span class="modal-close" id="modal-close">✕</span>
+        <h2>Object Info</h2>
+        <p id="modal-content">Information about the selected object will appear here.</p>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script>
+        // Loader simulation
+        let progress = 0;
+        const loaderProgressBar = document.getElementById('loader-progress');
+        const loader = document.querySelector('.loader');
+        
+        const loadingInterval = setInterval(() => {
+            progress += Math.random() * 10;
+            if (progress >= 100) {
+                progress = 100;
+                clearInterval(loadingInterval);
+                setTimeout(() => {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                    }, 500);
+                }, 500);
+            }
+            loaderProgressBar.style.width = `${progress}%`;
+        }, 150);
+
+        // Initialize scene, camera, and renderer
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ canvas: document.getElementById('canvas'), antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setClearColor(0x111133);
+        
+        // Raycaster for object interaction
+        const raycaster = new THREE.Raycaster();
+        const mouse = new THREE.Vector2();
+        
+        // Audio setup - simulated
+        let musicPlaying = false;
+        let soundEffectsEnabled = true;
+        
+        document.getElementById('toggle-music').addEventListener('click', () => {
+            musicPlaying = !musicPlaying;
+            document.getElementById('toggle-music').innerHTML = musicPlaying ? '♫' : '♪';
+        });
+        
+        document.getElementById('toggle-sound').addEventListener('click', () => {
+            soundEffectsEnabled = !soundEffectsEnabled;
+            document.getElementById('toggle-sound').innerHTML = soundEffectsEnabled ? '🔊' : '🔇';
+        });
+        
+        // Modal setup
+        const modal = document.getElementById('info-modal');
+        const modalContent = document.getElementById('modal-content');
+        const modalClose = document.getElementById('modal-close');
+        
+        modalClose.addEventListener('click', () => {
+            modal.style.display = 'none';
+        });
+
+        // Lights
+        const ambientLight = new THREE.AmbientLight(0x404040);
+        scene.add(ambientLight);
+
+        const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+        directionalLight.position.set(1, 1, 1);
+        scene.add(directionalLight);
+        
+        // Point lights for more dynamic lighting
+        const pointLight1 = new THREE.PointLight(0xff0000, 1, 20);
+        pointLight1.position.set(5, 5, 5);
+        scene.add(pointLight1);
+        
+        const pointLight2 = new THREE.PointLight(0x0000ff, 1, 20);
+        pointLight2.position.set(-5, -5, 5);
+        scene.add(pointLight2);
+
+        // Arrays to store our objects
+        const objects = [];
+        const particles = [];
+        const colors = [0xff4444, 0x44ff44, 0x4444ff, 0xffff44, 0xff44ff, 0x44ffff, 0xffaa00, 0x00ffaa, 0xaa00ff];
+        
+        // Configuration
+        let isRotating = true;
+        let mouseX = 0;
+        let mouseY = 0;
+        let particlesEnabled = false;
+        let clock = new THREE.Clock();
+        let currentScene = 'cosmos';
+        
+        // Background stars
+        function createStars() {
+            const geometry = new THREE.BufferGeometry();
+            const vertices = [];
+            
+            for (let i = 0; i < 5000; i++) {
+                vertices.push(
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000,
+                    (Math.random() - 0.5) * 2000
+                );
+            }
+            
+            geometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 2,
+                color: 0xffffff
+            });
+            
+            const stars = new THREE.Points(geometry, material);
+            scene.add(stars);
+            return stars;
+        }
+        
+        const stars = createStars();
+        
+        // Particle system
+        function createParticleSystem() {
+            const geometry = new THREE.BufferGeometry();
+            const particleCount = 1000;
+            
+            const positions = new Float32Array(particleCount * 3);
+            const colors = new Float32Array(particleCount * 3);
+            
+            for (let i = 0; i < particleCount; i++) {
+                const i3 = i * 3;
+                
+                // Position
+                positions[i3] = (Math.random() - 0.5) * 20;
+                positions[i3 + 1] = (Math.random() - 0.5) * 20;
+                positions[i3 + 2] = (Math.random() - 0.5) * 20;
+                
+                // Color
+                colors[i3] = Math.random();
+                colors[i3 + 1] = Math.random();
+                colors[i3 + 2] = Math.random();
+            }
+            
+            geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+            
+            const material = new THREE.PointsMaterial({
+                size: 0.1,
+                vertexColors: true,
+                transparent: true,
+                opacity: 0.8
+            });
+            
+            const particleSystem = new THREE.Points(geometry, material);
+            particleSystem.visible = particlesEnabled;
+            scene.add(particleSystem);
+            
+            return particleSystem;
+        }
+        
+        const particleSystem = createParticleSystem();
+        
+        // Create objects
+        function createObject(type) {
+            let geometry;
+            
+            switch(type) {
+                case 'cube':
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+                    break;
+                case 'sphere':
+                    geometry = new THREE.SphereGeometry(0.7, 32, 32);
+                    break;
+                case 'torus':
+                    geometry = new THREE.TorusGeometry(0.5, 0.2, 16, 100);
+                    break;
+                default:
+                    geometry = new THREE.BoxGeometry(1, 1, 1);
+            }
+            
+            const material = new THREE.MeshPhongMaterial({ 
+                color: colors[Math.floor(Math.random() * colors.length)],
+                specular: 0x111111,
+                shininess: 30
+            });
+            
+            const object = new THREE.Mesh(geometry, material);
+            
+            // Position randomly
+            object.position.x = (Math.random() - 0.5) * 15;
+            object.position.y = (Math.random() - 0.5) * 15;
+            object.position.z = (Math.random() - 0.5) * 10 - 5;
+            
+            // Assign random rotation speed
+            object.userData.rotationSpeed = {
+                x: Math.random() * 0.02 - 0.01,
+                y: Math.random() * 0.02 - 0.01,
+                z: Math.random() * 0.02 - 0.01
+            };
+            
+            object.userData.type = type;
+            object.userData.originalScale = { x: 1, y: 1, z: 1 };
+            object.userData.hovered = false;
+            
+            scene.add(object);
+            objects.push(object);
+            
+            return object;
+        }
+        
+        // Create initial objects
+        for (let i = 0; i < 10; i++) {
+            createObject('cube');
+        }
+        
+        for (let i = 0; i < 5; i++) {
+            createObject('sphere');
+        }
+        
+        for (let i = 0; i < 5; i++) {
+            createObject('torus');
+        }
+        
+        // Position camera
+        camera.position.z = 10;
+        
+        // Mouse events
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX / window.innerWidth) * 2 - 1;
+            mouseY = -(event.clientY / window.innerHeight) * 2 + 1;
+            
+            // Update mouse position for raycaster
+            mouse.x = mouseX;
+            mouse.y = mouseY;
+        });
+        
+        document.addEventListener('click', (event) => {
+            // Check for object intersection
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects, true);
+            
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                
+                // Display info about the clicked object
+                modal.style.display = 'block';
+                modalContent.textContent = `You clicked on a ${object.userData.type}! This object is rotating at speeds X: ${object.userData.rotationSpeed.x.toFixed(3)}, Y: ${object.userData.rotationSpeed.y.toFixed(3)}, Z: ${object.userData.rotationSpeed.z.toFixed(3)}`;
+                
+                // Apply a pulsing effect to the clicked object
+                object.userData.clicked = true;
+                setTimeout(() => {
+                    object.userData.clicked = false;
+                }, 2000);
+                
+                if (soundEffectsEnabled) {
+                    // Sound effect would play here in a real implementation
+                }
+            }
+        });
+        
+        // Button event listeners
+        document.getElementById('addCube').addEventListener('click', () => createObject('cube'));
+        document.getElementById('addSphere').addEventListener('click', () => createObject('sphere'));
+        document.getElementById('addTorus').addEventListener('click', () => createObject('torus'));
+        
+        document.getElementById('toggleRotation').addEventListener('click', () => {
+            isRotating = !isRotating;
+        });
+        
+        document.getElementById('changeColors').addEventListener('click', () => {
+            objects.forEach(object => {
+                if (object.material && object.material.color) {
+                    object.material.color.setHex(colors[Math.floor(Math.random() * colors.length)]);
+                }
+            });
+        });
+        
+        document.getElementById('explodeEffect').addEventListener('click', () => {
+            objects.forEach(object => {
+                // Add explosion velocity
+                object.userData.exploding = true;
+                object.userData.explosionVelocity = {
+                    x: (object.position.x / 5) * (Math.random() + 0.5),
+                    y: (object.position.y / 5) * (Math.random() + 0.5),
+                    z: (object.position.z / 5) * (Math.random() + 0.5)
+                };
+                
+                // Reset after 2 seconds
+                setTimeout(() => {
+                    object.userData.exploding = false;
+                    
+                    // Return to new random position
+                    const targetPos = {
+                        x: (Math.random() - 0.5) * 15,
+                        y: (Math.random() - 0.5) * 15,
+                        z: (Math.random() - 0.5) * 10 - 5
+                    };
+                    
+                    object.userData.returningToPosition = true;
+                    object.userData.targetPosition = targetPos;
+                    
+                    setTimeout(() => {
+                        object.userData.returningToPosition = false;
+                    }, 1000);
+                }, 2000);
+            });
+        });
+        
+        document.getElementById('toggleParticles').addEventListener('click', () => {
+            particlesEnabled = !particlesEnabled;
+            particleSystem.visible = particlesEnabled;
+        });
+        
+        // Scene selection
+        function setScene(sceneName) {
+            currentScene = sceneName;
+            
+            switch(sceneName) {
+                case 'cosmos':
+                    renderer.setClearColor(0x111133);
+                    stars.visible = true;
+                    pointLight1.color.setHex(0xff0000);
+                    pointLight2.color.setHex(0x0000ff);
+                    break;
+                    
+                case 'ocean':
+                    renderer.setClearColor(0x004466);
+                    stars.visible = false;
+                    pointLight1.color.setHex(0x00ffff);
+                    pointLight2.color.setHex(0x0066ff);
+                    break;
+                    
+                case 'neon':
+                    renderer.setClearColor(0x110022);
+                    stars.visible = true;
+                    pointLight1.color.setHex(0xff00ff);
+                    pointLight2.color.setHex(0x00ffaa);
+                    break;
+                    
+                case 'minimal':
+                    renderer.setClearColor(0x000000);
+                    stars.visible = false;
+                    pointLight1.color.setHex(0xffffff);
+                    pointLight2.color.setHex(0xffffff);
+                    break;
+            }
+        }
+        
+        document.getElementById('scene-cosmos').addEventListener('click', () => setScene('cosmos'));
+        document.getElementById('scene-ocean').addEventListener('click', () => setScene('ocean'));
+        document.getElementById('scene-neon').addEventListener('click', () => setScene('neon'));
+        document.getElementById('scene-minimal').addEventListener('click', () => setScene('minimal'));
+        
+        // Window resize event listener
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+        
+        // Animation loop
+        function animate() {
+            requestAnimationFrame(animate);
+            
+            const delta = clock.getDelta();
+            const time = Date.now() * 0.001;
+            
+            // Update camera position based on mouse with smoothing
+            camera.position.x += (mouseX * 5 - camera.position.x) * 0.05;
+            camera.position.y += (mouseY * 5 - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+            
+            // Rotate point lights
+            pointLight1.position.x = Math.sin(time * 0.7) * 8;
+            pointLight1.position.y = Math.cos(time * 0.5) * 8;
+            pointLight2.position.x = Math.sin(time * 0.3) * 8;
+            pointLight2.position.y = Math.cos(time * 0.5) * 8;
+            
+            // Rotate objects
+            objects.forEach(object => {
+                // Handle explosion effect
+                if (object.userData.exploding) {
+                    object.position.x += object.userData.explosionVelocity.x;
+                    object.position.y += object.userData.explosionVelocity.y;
+                    object.position.z += object.userData.explosionVelocity.z;
+                }
+                
+                // Handle returning to position
+                if (object.userData.returningToPosition) {
+                    object.position.x += (object.userData.targetPosition.x - object.position.x) * 0.1;
+                    object.position.y += (object.userData.targetPosition.y - object.position.y) * 0.1;
+                    object.position.z += (object.userData.targetPosition.z - object.position.z) * 0.1;
+                }
+                
+                // Normal rotation
+                if (isRotating && !object.userData.exploding) {
+                    object.rotation.x += object.userData.rotationSpeed.x;
+                    object.rotation.y += object.userData.rotationSpeed.y;
+                    object.rotation.z += object.userData.rotationSpeed.z;
+                }
+                
+                // Pulsing effect for clicked objects
+                if (object.userData.clicked) {
+                    const pulse = Math.sin(Date.now() * 0.01) * 0.2 + 1;
+                    object.scale.set(pulse, pulse, pulse);
+                } else if (!object.userData.hovered) {
+                    // Reset scale if not hovered or clicked
+                    object.scale.x += (object.userData.originalScale.x - object.scale.x) * 0.1;
+                    object.scale.y += (object.userData.originalScale.y - object.scale.y) * 0.1;
+                    object.scale.z += (object.userData.originalScale.z - object.scale.z) * 0.1;
+                }
+            });
+            
+            // Animate particles
+            if (particlesEnabled) {
+                const positions = particleSystem.geometry.attributes.position.array;
+                
+                for (let i = 0; i < positions.length; i += 3) {
+                    // Move particles in a wave pattern
+                    positions[i + 1] += Math.sin(time + positions[i] * 0.1) * 0.01;
+                    
+                    // Slowly rotate around center
+                    const x = positions[i];
+                    const z = positions[i + 2];
+                    const angle = 0.001;
+                    
+                    positions[i] = x * Math.cos(angle) - z * Math.sin(angle);
+                    positions[i + 2] = x * Math.sin(angle) + z * Math.cos(angle);
+                }
+                
+                particleSystem.geometry.attributes.position.needsUpdate = true;
+            }
+            
+            // Check for hover effects
+            raycaster.setFromCamera(mouse, camera);
+            const intersects = raycaster.intersectObjects(objects);
+            
+            // Reset all hover states
+            objects.forEach(object => {
+                if (!object.userData.clicked) {
+                    object.userData.hovered = false;
+                }
+            });
+            
+            // Apply hover effect to intersected object
+            if (intersects.length > 0) {
+                const object = intersects[0].object;
+                if (!object.userData.clicked) {
+                    object.userData.hovered = true;
+                    object.scale.set(1.2, 1.2, 1.2);
+                }
+            }
+            
+            renderer.render(scene, camera);
+        }
+        
+        animate();
+    </script>
+</body>
+</html>
