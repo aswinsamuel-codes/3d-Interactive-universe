@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Advanced 3D Interactive Universe</title>
+  <link rel="stylesheet" href="styles/style.css" />
+</head>
+<body>
+  <div class="loader">
+    <h2>Loading Experience</h2>
+    <div class="loader-bar">
+      <div class="loader-progress" id="loader-progress"></div>
+    </div>
+  </div>
+
+  <canvas id="canvas"></canvas>
+
+  <div class="content">
+    <h1>3D Interactive Universe</h1>
+    <p>Move your mouse to navigate. Click on objects to interact.</p>
+
+    <div class="controls">
+      <button id="addCube">Add Cube</button>
+      <button id="addSphere">Add Sphere</button>
+      <button id="addTorus">Add Torus</button>
+      <button id="toggleRotation">Toggle Rotation</button>
+      <button id="changeColors">Change Colors</button>
+      <button id="explodeEffect">Explosion Effect</button>
+      <button id="toggleParticles">Toggle Particles</button>
+    </div>
+
+    <div class="scene-selector">
+      <p>Select Scene:</p>
+      <div class="controls">
+        <button id="scene-cosmos">Cosmic Scene</button>
+        <button id="scene-ocean">Ocean Depths</button>
+        <button id="scene-neon">Neon City</button>
+        <button id="scene-minimal">Minimal Space</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="audio-controls">
+    <button class="audio-button" id="toggle-music">♪</button>
+    <button class="audio-button" id="toggle-sound">🔊</button>
+  </div>
+
+  <div class="modal" id="info-modal">
+    <span class="modal-close" id="modal-close">✕</span>
+    <h2>Object Info</h2>
+    <p id="modal-content">Information about the selected object will appear here.</p>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="scripts/main.js"></script>
+</body>
+</html>
